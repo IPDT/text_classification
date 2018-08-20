@@ -7,6 +7,8 @@
 # @Software: PyCharm
 import numpy as np
 import tensorflow as tf
+
+
 class TextCNNRNN(object):
     def __init__(self, embedding_mat, non_static, hidden_unit, sequence_length, max_pool_size,
                  num_classes, embedding_size, filter_sizes, num_filters, l2_reg_lambda=0.0):
@@ -29,7 +31,7 @@ class TextCNNRNN(object):
         self.real_len = tf.placeholder(tf.int32, [None], name='real_len')
 
         l2_loss = tf.constant(0.0)
-        with tf.device('/cpu:0'), tf.name_scope('embedding'):
+        with tf.device('/gpu:0'), tf.name_scope('embedding'):
             if not non_static:
                 W = tf.constant(embedding_mat, name='W')
             else:
@@ -38,11 +40,12 @@ class TextCNNRNN(object):
             emb = tf.expand_dims(self.embedded_chars, -1)  # 增加维度，-1是最后一个位置
 
         pooled_concat = []
-        reduced = np.int32(np.ceil((sequence_length) * 1.0 / max_pool_size))
+        reduced = np.int32(np.ceil(sequence_length * 1.0 / max_pool_size))
 
         for i, filter_size in enumerate(filter_sizes):
             with tf.name_scope('conv-maxpool-%s' % filter_size):
-                # Zero paddings so that the convolution output have dimension batch x sequence_length x emb_size x channel
+                # Zero paddings so that the convolution output have dimension batch x sequence_length x emb_size x
+                # channel
                 num_prio = (filter_size - 1) // 2
                 num_post = (filter_size - 1) - num_prio
                 pad_prio = tf.concat([self.pad] * num_prio, 1)
@@ -77,7 +80,8 @@ class TextCNNRNN(object):
         # inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(1, reduced, pooled_concat)]
         inputs = [tf.squeeze(input_, [1]) for input_ in
                   tf.split(pooled_concat, num_or_size_splits=int(reduced), axis=1)]
-        # outputs, state = tf.nn.rnn(lstm_cell, inputs, initial_state=self._initial_state, sequence_length=self.real_len)
+        # outputs, state = tf.nn.rnn(lstm_cell, inputs, initial_state=self._initial_state,
+        # sequence_length=self.real_len)
         outputs, state = tf.contrib.rnn.static_rnn(lstm_cell, inputs, initial_state=self._initial_state,
                                                    sequence_length=self.real_len)
 
@@ -88,7 +92,7 @@ class TextCNNRNN(object):
             one = tf.ones([1, hidden_unit], tf.float32)
             for i in range(1, len(outputs)):
                 ind = self.real_len < (i + 1)
-                #print('ind:', ind)
+                # print('ind:', ind)
                 ind = tf.to_float(ind)
                 ind = tf.expand_dims(ind, -1)
                 mat = tf.matmul(ind, one)
@@ -103,8 +107,8 @@ class TextCNNRNN(object):
             self.predictions = tf.argmax(self.scores, 1, name='predictions')
 
         with tf.name_scope('loss'):
-            losses = tf.nn.softmax_cross_entropy_with_logits(labels=self.input_y,
-                                                             logits=self.scores)  # only named arguments accepted
+            losses = tf.nn.softmax_cross_entropy_with_logits(labels=self.input_y, logits=self.scores)
+            # only named arguments accepted
             self.loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
 
         with tf.name_scope('accuracy'):

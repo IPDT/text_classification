@@ -6,15 +6,13 @@
 # @File    : train_test.py
 # @Software: PyCharm
 import os
-import sys
 import json
 import time
 import shutil
 import pickle
 import logging
-import data_helper
+from test import data_helper
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 from text_cnn_rnn import TextCNNRNN
 from sklearn.model_selection import train_test_split
@@ -23,7 +21,7 @@ from sklearn.model_selection import train_test_split
 def train_cnn_rnn():
     # input_file=sys.argv[1]
     input_file='./data/simple3.csv'
-    x_,y_,vocabulary,vocabulary_inv,df,labels=data_helper.load_data(input_file)
+    x_,y_,vocabulary,vocabulary_inv,df,labels= data_helper.load_data(input_file)
     #print(x_.shape)#(27404,489)
     #print(y_.shape)#(27404,10)
 
@@ -127,7 +125,7 @@ def train_cnn_rnn():
 
             #训练准备
             #根据batch_size计算每个train_batch的大小
-            train_batches=data_helper.batch_iter(list(zip(x_train,y_train)),params['batch_size'],params['num_epochs'])
+            train_batches= data_helper.batch_iter(list(zip(x_train, y_train)), params['batch_size'], params['num_epochs'])
             best_accuracy, best_at_step = 0, 0
 
             # Train the model with x_train and y_train

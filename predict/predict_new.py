@@ -11,7 +11,7 @@ import json
 import shutil
 import pickle
 import logging
-import data_helper
+from test import data_helper
 import numpy as np
 import pandas as pd
 import tensorflow as tf
