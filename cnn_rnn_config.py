@@ -6,8 +6,8 @@ class CNNRNNConfig(object):
     evaluate_every = 200
     filter_sizes = "3,4,5"
     hidden_unit = 300
-    l2_reg_lambda = 0.0
-    max_pool_size = 4
+    l2_reg_lambda = 0.2
+    max_pool_size = 2
     non_static = False
     num_filters = 32
-    num_epochs = 1
+    num_epochs = 5
