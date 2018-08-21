@@ -2,6 +2,8 @@ from data_preprocess.mysql_config import MySQLConfig
 from collections import Counter
 import numpy as np
 import itertools
+import os
+import json
 
 
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
@@ -30,21 +32,33 @@ def load_embeddings(vocabulary_dict, vocabulary_list, embedding_dim):
     return embedding_mat
 
 
-def load_data(forced_sequence_length):
+def load_data(forced_sequence_length, vocab_file):
     mysql_config = MySQLConfig()
     raw_label, raw_content = mysql_config.read_raw_data()
     padding_content = pad_sentences(raw_content, forced_sequence_length)
-    vocabulary_dict, vocabulary_list = build_vocab(padding_content)
-    x = np.array([[vocabulary_list[word] for word in sentence] for sentence in padding_content])
-    y = get_one_hot_label(raw_label)
-    return x, y, vocabulary_dict, vocabulary_list
+    vocabulary_list, vocabulary_dict = build_vocab(vocab_file, raw_content=padding_content)
+    x = np.array([[vocabulary_dict[word] for word in sentence] for sentence in padding_content])
+    y, labels = get_one_hot_label(raw_label)
+    return x, y, vocabulary_list, vocabulary_dict, labels
 
 
-def build_vocab(raw_content):
-    word_counts = Counter(itertools.chain(*raw_content))
-    vocabulary_dict = [word[0] for word in word_counts.most_common()]
-    vocabulary_list = {word: index for index, word in enumerate(vocabulary_dict)}
-    return vocabulary_dict, vocabulary_list
+def build_vocab(vocab_file, raw_content=None, custom_content=None):
+    vocabulary_list = []
+    if os.path.exists(vocab_file):
+        f_vocab = open(vocab_file, 'r', encoding='utf=8')
+        vocabulary_list = json.load(f_vocab)
+    elif not os.path.exists(vocab_file) and raw_content is not None:
+        word_counts = Counter(itertools.chain(*raw_content))
+        vocabulary_list = [word[0] for word in word_counts.most_common()]
+        f_vocab = open(vocab_file, 'w', encoding='utf=8')
+        f_vocab.write(json.dumps(vocabulary_list))
+    if custom_content is not None:
+        for sentence in custom_content:
+            for word in sentence:
+                if word not in vocabulary_list:
+                    vocabulary_list.append(word)
+    vocabulary_dict = {word: index for index, word in enumerate(vocabulary_list)}
+    return vocabulary_list, vocabulary_dict
 
 
 def get_one_hot_label(raw_labels):
@@ -56,7 +70,7 @@ def get_one_hot_label(raw_labels):
     y_raw = []
     for label in raw_labels:
         y_raw.append(label_dict[label])
-    return np.array(y_raw)
+    return np.array(y_raw), labels
 
 
 def get_data_from_db():

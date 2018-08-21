@@ -10,7 +10,7 @@ import tensorflow as tf
 
 
 class TextCNNRNN(object):
-    def __init__(self, embedding_mat, non_static, hidden_unit, sequence_length, max_pool_size,
+    def __init__(self, labels, embedding_mat, non_static, hidden_unit, sequence_length, max_pool_size,
                  num_classes, embedding_size, filter_sizes, num_filters, l2_reg_lambda=0.0):
         # embedding_mat
         # non_static 判断是否是训练
@@ -23,15 +23,16 @@ class TextCNNRNN(object):
         # num_filters 过滤器的个数 配置为32
         # l2_reg_lambda L2的正则化
 
+        self.labels = tf.constant(labels, name='labels')
         self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name='input_x')
         self.input_y = tf.placeholder(tf.float32, [None, num_classes], name='input_y')
         self.dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
-        self.batch_size = tf.placeholder(tf.int32, [])
+        self.batch_size = tf.placeholder(tf.int32, [], name='batch_size')
         self.pad = tf.placeholder(tf.float32, [None, 1, embedding_size, 1], name='pad')
         self.real_len = tf.placeholder(tf.int32, [None], name='real_len')
-
         l2_loss = tf.constant(0.0)
-        with tf.device('/gpu:0'), tf.name_scope('embedding'):
+
+        with tf.name_scope('embedding'):
             if not non_static:
                 W = tf.constant(embedding_mat, name='W')
             else:
@@ -87,7 +88,7 @@ class TextCNNRNN(object):
 
         # Collect the appropriate last words into variable output (dimension = batch x embedding_size)
         output = outputs[0]
-        with tf.variable_scope('Output'):
+        with tf.variable_scope('output'):
             tf.get_variable_scope().reuse_variables()
             one = tf.ones([1, hidden_unit], tf.float32)
             for i in range(1, len(outputs)):
@@ -98,7 +99,7 @@ class TextCNNRNN(object):
                 mat = tf.matmul(ind, one)
                 output = tf.add(tf.multiply(output, mat), tf.multiply(outputs[i], 1.0 - mat))
 
-        with tf.name_scope('output'):
+        with tf.name_scope('scores'):
             self.W = tf.Variable(tf.truncated_normal([hidden_unit, num_classes], stddev=0.1), name='W')
             b = tf.Variable(tf.constant(0.1, shape=[num_classes]), name='b')
             l2_loss += tf.nn.l2_loss(W)
