@@ -1,3 +1,7 @@
 target/
 checkpoints/
 predict/empty
+.idea
+*.iws
+*.iml
+*.ipr
