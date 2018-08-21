@@ -38,7 +38,7 @@ def export():
             graph_def.ParseFromString(f.read())
 
             x_batch = tf.placeholder(tf.int32, [None, model_config.forced_sequence_length], name='input_x')
-            batch_size = tf.placeholder(tf.int32, [], name='batch_size')
+            # batch_size = tf.placeholder(tf.int32, [], name='batch_size')
             pad = tf.placeholder(tf.float32, [None, 1, model_config.embedding_dim, 1], name='pad')
             real = tf.placeholder(tf.int32, [None], name='real_len')
             # batch_size = len(x_batch)
@@ -47,8 +47,8 @@ def export():
 
             output1, output2, output3 = tf.import_graph_def(graph_def,
                                                             input_map={'input_x': x_batch,
-                                                                       'dropout_keep_prob': model_config.dropout_keep_prob,
-                                                                       'batch_size': batch_size,
+                                                                       'dropout_keep_prob': 0.5,
+                                                                       'batch_size': 128,
                                                                        'pad': pad,
                                                                        'real_len': real},
                                                             return_elements=['labels:0', 'scores/scores:0',
@@ -75,11 +75,15 @@ def export():
             label_output_tensor_info = tf.saved_model.utils.build_tensor_info(output3)
 
             tensor_info_x_train = utils.build_tensor_info(x_batch)
+            tensor_info_pad = utils.build_tensor_info(pad)
+            tensor_info_real_len = utils.build_tensor_info(real)
 
             prediction_signature = (
                 tf.saved_model.signature_def_utils.build_signature_def(
                     inputs={
-                        'text': tensor_info_x_train
+                        'text': tensor_info_x_train,
+                        'pad': tensor_info_pad,
+                        'real_len': tensor_info_real_len
                     },
                     outputs={
                         'label_output_constant_info': label_output_constant_info,

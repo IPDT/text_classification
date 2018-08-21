@@ -3,11 +3,12 @@ import os
 import numpy as np
 import json
 import itertools
+import re
 from collections import Counter
 
 
 class CNNRNNConfig(object):
-    forced_sequence_length = 1000
+    forced_sequence_length = 500
     batch_size = 128
     dropout_keep_prob = 0.5
     embedding_dim = 300
@@ -28,12 +29,12 @@ def real_len(batches):
 def build_vocab(vocab_file, raw_content=None, custom_content=None):
     vocabulary_list = []
     if os.path.exists(vocab_file):
-        f_vocab = open(vocab_file, 'r', encoding='utf=8')
+        f_vocab = open(vocab_file, 'r', encoding='utf-8')
         vocabulary_list = json.load(f_vocab)
     elif not os.path.exists(vocab_file) and raw_content is not None:
         word_counts = Counter(itertools.chain(*raw_content))
         vocabulary_list = [word[0] for word in word_counts.most_common()]
-        f_vocab = open(vocab_file, 'w', encoding='utf=8')
+        f_vocab = open(vocab_file, 'w', encoding='utf-8')
         f_vocab.write(json.dumps(vocabulary_list))
     if custom_content is not None:
         for sentence in custom_content:
@@ -82,19 +83,19 @@ def native_content(content):
     return re.sub(r'\s+', ' ', no_punc_content)
 
 
-# folder_path = os.path.abspath(os.path.join(os.getcwd(), '..'))
+folder_path = os.path.abspath(os.path.join(os.getcwd(), '..'))
 model_config = CNNRNNConfig()
 
 # config = tf.ConfigProto(allow_soft_placement=True)
 # config.gpu_options.allow_growth = True
 with tf.Session() as sess:
-    forced_sequence_length = 1000
+    forced_sequence_length = model_config.forced_sequence_length
     # with tf.device('/gpu:1'):
-    graph = open('graph.pb', 'rb')
-    f_test = open('/predict/test.txt', 'r', encoding='utf-8')
+    graph = open(folder_path+'/trained_results/graph.pb', 'rb')
+    f_test = open(folder_path + '/predict/test.txt', 'r', encoding='utf-8')
     raw_content = [list(native_content(line).split()) for line in f_test]
     padding_content = pad_sentences(raw_content, forced_sequence_length)
-    vocabulary_list, vocabulary_dict = build_vocab('vocab_en.txt',
+    vocabulary_list, vocabulary_dict = build_vocab(folder_path + '/data_preprocess/vocab_en.txt',
                                                    raw_content=padding_content, custom_content=raw_content)
     x = [[vocabulary_dict[word] for word in sentence] for sentence in padding_content]
     x_test, y_test = np.asarray(x), None
@@ -122,5 +123,5 @@ with tf.Session() as sess:
         result2 = sess.run(output2)
         result3 = sess.run(output3)
 
-        for re in result3:
-            print(str(labels[re]))
+        for result in result3:
+            print(labels[result])
