@@ -7,6 +7,9 @@
 # @Software: PyCharm
 import numpy as np
 import tensorflow as tf
+import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 
 class TextCNNRNN(object):
@@ -32,7 +35,7 @@ class TextCNNRNN(object):
         self.real_len = tf.placeholder(tf.int32, [None], name='real_len')
         l2_loss = tf.constant(0.0)
 
-        with tf.name_scope('embedding'):
+        with tf.device('/gpu:0'), tf.name_scope('embedding'):
             if not non_static:
                 W = tf.constant(embedding_mat, name='W')
             else:

@@ -1,7 +1,10 @@
 target/
 checkpoints/
 predict/empty
-.idea
+trained_results/
+data_preprocess/stop_word/
+text_similarity/data_preprocess/stop_word/
+text_similarity/text_sim.txt
 *.iws
 *.iml
 *.ipr

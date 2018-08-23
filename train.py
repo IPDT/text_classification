@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 from data_preprocess.data_helper import load_data, load_embeddings, batch_iter
 from cnn_rnn_config import CNNRNNConfig
 
-logging.getLogger().setLevel(logging.INFO)
+# logging.getLogger().setLevel(logging.INFO)
 model_config = CNNRNNConfig()
 
 
@@ -32,6 +32,8 @@ def train_cnn_rnn():
     # Prepare data and vocabulary
     x, y, vocabulary_list, vocabulary_dict, labels = load_data(model_config.forced_sequence_length,
                                                                './data_preprocess/vocab_en.txt')
+    print('-------------------load data successfully-------------------')
+
     # Split the original dataset into train set and test set
     x_, x_test, y_, y_test = train_test_split(x, y, test_size=0.1)
     # Split the train set into train set and dev set
@@ -39,6 +41,7 @@ def train_cnn_rnn():
 
     # Assign a 300 dimension vector to each word
     embedding_mat = load_embeddings(vocabulary_list, vocabulary_dict, model_config.embedding_dim)
+    print('-------------------embed data successfully------------------')
 
     print('x_train: {}, x_dev: {}, x_test: {}'.format(len(x_train), len(x_dev), len(x_test)))
     print('y_train: {}, y_dev: {}, y_test: {}'.format(len(y_train), len(y_dev), len(y_test)))
@@ -66,15 +69,14 @@ def train_cnn_rnn():
                                  num_filters=model_config.num_filters,
                                  embedding_size=model_config.embedding_dim,
                                  l2_reg_lambda=model_config.l2_reg_lambda)
-
-            # print(x_train.shape) #14,39
-            # print(y_train.shape)
+            print('-------------build model structure successfully-------------')
 
             global_step = tf.Variable(0, name='global_step', trainable=False)
-            optimizer = tf.train.RMSPropOptimizer(1e-3, decay=0.9)
+            optimizer = tf.train.AdamOptimizer(1e-3)
+            # optimizer = tf.train.RMSPropOptimizer(1e-3, decay=0.9)
             grads_and_vars = optimizer.compute_gradients(cnn_rnn.loss)
             train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
-
+            print('----------------build optimizer successfully----------------')
             # Checkpoint files will be saved in this directory during training
             timestamp = str(int(time.time()))
             checkpoint_dir = 'checkpoints/checkpoints_' + timestamp + '/'
@@ -99,8 +101,8 @@ def train_cnn_rnn():
 
                 # print("train_step",)
                 current_step = tf.train.global_step(sess, global_step)
-                if current_step > 200:
-                    break
+                # if current_step > 200:
+                #     break
                 # Evaluate the model with x_dev and y_dev
                 if current_step % model_config.evaluate_every == 0:
                     dev_batches = batch_iter(list(zip(x_dev, y_dev)), model_config.batch_size, 1)
@@ -133,20 +135,19 @@ def train_cnn_rnn():
                                                                                        'scores/predictions'])
             tf.train.write_graph(graph_pb, '.', trained_dir + "graph.pb", as_text=False)
 
-
             # Evaluate x_test and y_test
-            # saver.restore(sess, checkpoint_prefix + '-' + str(best_at_step))
-            # test_batches = batch_iter(list(zip(x_test, y_test)), model_config.batch_size, 1, shuffle=False)
-            # total_test_correct = 0
-            # for test_batch in test_batches:
-            #     x_test_batch, y_test_batch = zip(*test_batch)
-            #     feed_dict = dev_step(cnn_rnn, x_test_batch, y_test_batch)
-            #     step, loss, accuracy, num_test_correct, predictions = sess.run(
-            #         [global_step, cnn_rnn.loss, cnn_rnn.accuracy, cnn_rnn.num_correct, cnn_rnn.predictions], feed_dict)
-            #     # acc, loss, num_test_correct, predictions = dev_step(cnn_rnn,x_test_batch, y_test_batch)
-            #
-            #     total_test_correct += int(num_test_correct)
-            # print('Accuracy on test set: {}'.format(float(total_test_correct) / len(y_test)))
+            saver.restore(sess, checkpoint_prefix + '-' + str(best_at_step))
+            test_batches = batch_iter(list(zip(x_test, y_test)), model_config.batch_size, 1, shuffle=False)
+            total_test_correct = 0
+            for test_batch in test_batches:
+                x_test_batch, y_test_batch = zip(*test_batch)
+                feed_dict = dev_step(cnn_rnn, x_test_batch, y_test_batch)
+                step, loss, accuracy, num_test_correct, predictions = sess.run(
+                    [global_step, cnn_rnn.loss, cnn_rnn.accuracy, cnn_rnn.num_correct, cnn_rnn.predictions], feed_dict)
+                # acc, loss, num_test_correct, predictions = dev_step(cnn_rnn,x_test_batch, y_test_batch)
+
+                total_test_correct += int(num_test_correct)
+            print('Accuracy on test set: {}'.format(float(total_test_correct) / len(y_test)))
 
     # Save trained parameters and files since predict.py needs them
     # with open(trained_dir + 'words_index.json', 'w') as outfile:

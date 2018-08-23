@@ -1,5 +1,6 @@
 from data_preprocess.mysql_config import MySQLConfig
 from collections import Counter
+from data_preprocess.normalize_data import NormalizeData
 import numpy as np
 import itertools
 import os
@@ -35,8 +36,14 @@ def load_embeddings(vocabulary_dict, vocabulary_list, embedding_dim):
 def load_data(forced_sequence_length, vocab_file):
     mysql_config = MySQLConfig()
     raw_label, raw_content = mysql_config.read_raw_data()
-    padding_content = pad_sentences(raw_content, forced_sequence_length)
+    print('---------------read data from db successfully---------------')
+    normalize_data = NormalizeData(raw_content)
+    normalized_content = normalize_data.normalize_data()
+    print('----------------normalize data successfully-----------------')
+    padding_content = pad_sentences(normalized_content, forced_sequence_length)
+    print('-------------------pad data successfully--------------------')
     vocabulary_list, vocabulary_dict = build_vocab(vocab_file, raw_content=padding_content)
+    print('---------------build vocabulary successfully----------------')
     x = np.array([[vocabulary_dict[word] for word in sentence] for sentence in padding_content])
     y, labels = get_one_hot_label(raw_label)
     return x, y, vocabulary_list, vocabulary_dict, labels

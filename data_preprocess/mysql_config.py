@@ -1,12 +1,5 @@
 import pymysql
-import re
 from random import shuffle
-
-
-def native_content(content):
-    punc = '[.!\'?:"@#$%^&*()+=_:;“”‘’]'
-    no_punc_content = re.sub(punc, ' ', content.replace('\n', ''))
-    return re.sub(r'\s+', ' ', no_punc_content)
 
 
 class MySQLConfig(object):
@@ -25,9 +18,6 @@ class MySQLConfig(object):
             result_set = cursor.fetchall()
             shuffle(result_set)
             for row in result_set:
-                labels.append(native_content(row['label']))
-                if self.language_type == 'chinese':
-                    contents.append(list(native_content(row['data'])))
-                else:
-                    contents.append(list(native_content(row['data']).split()))
+                labels.append(row['label'])
+                contents.append(row['data'])
         return labels, contents
