@@ -61,7 +61,7 @@ class TextCNNRNN(object):
                 b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name='b')
                 conv = tf.nn.conv2d(emb_pad, W, strides=[1, 1, 1, 1], padding='VALID', name='conv')
 
-                h = tf.nn.relu(tf.nn.bias_add(conv, b), name='relu')
+                h = tf.nn.leaky_relu(tf.nn.bias_add(conv, b), name='leaky_relu')
 
                 # Maxpooling over the outputs
                 pooled = tf.nn.max_pool(h, ksize=[1, max_pool_size, 1, 1], strides=[1, max_pool_size, 1, 1],

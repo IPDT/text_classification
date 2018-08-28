@@ -3,8 +3,10 @@ checkpoints/
 predict/empty
 trained_results/
 data_preprocess/stop_word/
+data_preprocess/vocab_en.txt
 text_similarity/data_preprocess/stop_word/
 text_similarity/text_sim.txt
+data_pulling/
 *.iws
 *.iml
 *.ipr
